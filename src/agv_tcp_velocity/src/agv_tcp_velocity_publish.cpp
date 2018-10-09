@@ -4,10 +4,12 @@
 #include "std_msgs/Float64MultiArray.h"
 #include <tcp_client.h>
 
-#define FREQUENCY 10
+#define FREQUENCY 100
 #define COMMAND_SIZE 11
 
 #define MAXZERONUM 5
+
+#define K_omega 557042.300821634
 
 char *ip = "10.10.100.254";
 char *port = "8899";
@@ -148,36 +150,40 @@ int main(int argc, char *argv[]) {
     ros::Publisher omega_read_pub =
             n.advertise<std_msgs::Float64MultiArray>("/omega_from_agv", 1000);
     int omega_read_int[4];
-
+    int cnt_max = 10;
+    int cnt_iter = cnt_max;
     while (ros::ok()) {
         ros::spinOnce();
         rate.sleep();
 
-        // Read the velocity
-        carVelocity = dataUpdater.getCarVel();
-        velx = carVelocity.linear.x;
-        vely = carVelocity.linear.y;
-        vela = carVelocity.angular.z;
-        vx = (int) (velx * 1000.0);
-        vy = (int) (vely * 1000.0);
-        va = (int) (vela * 1000.0);
+        if (cnt_iter-- < 0) {
+            // Read the velocity
+            carVelocity = dataUpdater.getCarVel();
+            velx = carVelocity.linear.x;
+            vely = carVelocity.linear.y;
+            vela = carVelocity.angular.z;
+            vx = (int) (velx * 1000.0);
+            vy = (int) (vely * 1000.0);
+            va = (int) (vela * 1000.0);
 
-        velFilter(vx, vy, va, zeroCount, lastvx, lastvy, lastva); // filt out single zero
+            velFilter(vx, vy, va, zeroCount, lastvx, lastvy, lastva); // filt out single zero
 
-        genCmd(cmd, vx, vy, va); // adjust the opsite direction
-        tc.send_message(cmd, COMMAND_SIZE);
-        //ROS_INFO("command size %d", sizeof(cmd));
-        ROS_INFO("Send cmd %02x, %02x, %02x, %02x, %02x, %02x.", (unsigned char) cmd[4], (unsigned char) cmd[5],
-                 (unsigned char) cmd[6], (unsigned char) cmd[7], (unsigned char) cmd[8], (unsigned char) cmd[9]);
+            genCmd(cmd, vx, vy, va); // adjust the opsite direction
+            tc.send_message(cmd, COMMAND_SIZE);
+            //ROS_INFO("command size %d", sizeof(cmd));
+            ROS_INFO("Send cmd %02x, %02x, %02x, %02x, %02x, %02x.", (unsigned char) cmd[4], (unsigned char) cmd[5],
+                     (unsigned char) cmd[6], (unsigned char) cmd[7], (unsigned char) cmd[8], (unsigned char) cmd[9]);
+            cnt_iter = cnt_max;
+        }
+
         tc.read_message(omega_read_int);
         std_msgs::Float64MultiArray omega_read_msg;
 //        omega_read_msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
 //        omega_read_msg.layout.dim[0].size = 4;
 //        omega_read_msg.layout.dim[0].stride = 1;
 //        omega_read_msg.layout.dim[0].label = "bla";
-        for(int i=0;i<4;i++)
-        {
-            omega_read_msg.data.push_back(omega_read_int[i]/1000.0);
+        for (int i = 0; i < 4; i++) {
+            omega_read_msg.data.push_back(omega_read_int[i] / K_omega);
         }
         omega_read_pub.publish(omega_read_msg);
     }

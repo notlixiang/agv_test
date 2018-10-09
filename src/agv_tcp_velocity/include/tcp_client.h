@@ -5,7 +5,7 @@
     #include <sys/socket.h>  
     #include <arpa/inet.h>  
     #include <errno.h>
-#define RECEIVE_MAX_SIZE 99999
+#define RECEIVE_MAX_SIZE 30
     class tcp_client  
     {  
     private:  

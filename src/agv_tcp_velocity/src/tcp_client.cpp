@@ -47,6 +47,7 @@ void tcp_client::read_message(int data[4]) {
     }else{
 //        sscanf(buf, "SPEEDDTU%d,%d,%d,%dDTUSPEED", omega_int,omega_int+1,omega_int+2,omega_int+3);
         sscanf(buf, "SPEEDDTU%d,%d,%d,%dDTUSPEED", data,data+1,data+2,data+3);
+        printf(buf);
     }
 }
 
