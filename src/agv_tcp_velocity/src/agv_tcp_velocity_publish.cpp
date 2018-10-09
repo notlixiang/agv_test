@@ -153,8 +153,6 @@ int main(int argc, char *argv[]) {
     int cnt_max = 10;
     int cnt_iter = cnt_max;
     while (ros::ok()) {
-        ros::spinOnce();
-        rate.sleep();
 
         if (cnt_iter-- < 0) {
             // Read the velocity
@@ -183,9 +181,12 @@ int main(int argc, char *argv[]) {
 //        omega_read_msg.layout.dim[0].stride = 1;
 //        omega_read_msg.layout.dim[0].label = "bla";
         for (int i = 0; i < 4; i++) {
-            omega_read_msg.data.push_back(omega_read_int[i] / K_omega);
+            omega_read_msg.data.push_back(omega_read_int[i] / 1000.0);
         }
         omega_read_pub.publish(omega_read_msg);
+
+        rate.sleep();
+        ros::spinOnce();
     }
 
 }
